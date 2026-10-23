@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Fraud Detection Alerts — SecureBank DBMS{% endblock %}
+{% block page_title %}Fraud Detection & Compliance Hub{% endblock %}
+
+{% block content %}
+<!-- Fraud Detection Explanation Banner -->
+<div class="card" style="border-left: 4px solid var(--danger); margin-bottom: 24px;">
+    <div class="card-body">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+            <div style="max-width: 720px;">
+                <h3 style="color: var(--danger); font-size: 17px; margin-bottom: 6px;">
+                    🛡️ Database-Level Rule-Based Fraud Detection System
+                </h3>
+                <p style="font-size: 13.5px; color: #475569; line-height: 1.6;">
+                    Transactions are evaluated directly within Oracle PL/SQL using deterministic rules:
+                    <strong>Rule R1</strong> flags any transfer or withdrawal exceeding ₹1,00,000;
+                    <strong>Rule R2</strong> flags withdrawals exceeding ₹50,000 that also drain >80% of account balance;
+                    <strong>Rule R3</strong> evaluates customer risk as HIGH when 3+ alerts accumulate. Flagged transactions are held for administrative review.
+                </p>
+            </div>
+            <!-- Action to run PL/SQL batch cursor -->
+            <form method="post" action="/fraud-alerts/batch-audit" onsubmit="return confirm('Run PL/SQL explicit cursor (check_high_risk_accounts) to evaluate all pending alerts and automatically block accounts with 3+ flags?');">
+                <button type="submit" class="btn btn-danger">
+                    <span>⚡</span> Run Batch Audit Cursor
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Metrics Summary Cards -->
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Total Alerts</span>
+            <span class="stat-icon">🔔</span>
+        </div>
+        <div class="stat-value">{{ stats.total_alerts or 0 }}</div>
+        <div class="stat-meta">Historical flags generated</div>
+    </div>
+    <div class="stat-card" style="border-top: 3px solid var(--warning);">
+        <div class="stat-header">
+            <span class="stat-label" style="color: var(--warning);">Pending Review</span>
+            <span class="stat-icon">⏳</span>
+        </div>
+        <div class="stat-value" style="color: var(--warning);">{{ stats.pending_alerts or 0 }}</div>
+        <div class="stat-meta">Awaiting compliance signoff</div>
+    </div>
+    <div class="stat-card" style="border-top: 3px solid var(--danger);">
+        <div class="stat-header">
+            <span class="stat-label" style="color: var(--danger);">Confirmed Fraud</span>
+            <span class="stat-icon">🚫</span>
+        </div>
+        <div class="stat-value" style="color: var(--danger);">{{ stats.confirmed_alerts or 0 }}</div>
+        <div class="stat-meta">Verified malicious actions</div>
+    </div>
+    <div class="stat-card" style="border-top: 3px solid var(--success);">
+        <div class="stat-header">
+            <span class="stat-label" style="color: var(--success);">False Alarms</span>
+            <span class="stat-icon">✅</span>
+        </div>
+        <div class="stat-value" style="color: var(--success);">{{ stats.false_alarms or 0 }}</div>
+        <div class="stat-meta">Legitimate customer transfers</div>
+    </div>
+</div>
+
+<!-- Fraud Alerts Ledger -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Fraud Activity Register</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Direct view from <code>v_fraud_alert_details</code> linking alerts, transactions, and customers</p>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card-body" style="padding-bottom: 0;">
+        <form method="get" action="/fraud-alerts" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 13px; font-weight: 600;">Risk Level:</label>
+                <select name="risk" class="form-control" style="width: 140px;" onchange="this.form.submit()">
+                    <option value="ALL" {% if selected_risk == 'ALL' %}selected{% endif %}>All Levels</option>
+                    <option value="HIGH" {% if selected_risk == 'HIGH' %}selected{% endif %}>HIGH</option>
+                    <option value="MEDIUM" {% if selected_risk == 'MEDIUM' %}selected{% endif %}>MEDIUM</option>
+                    <option value="LOW" {% if selected_risk == 'LOW' %}selected{% endif %}>LOW</option>
+                </select>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 13px; font-weight: 600;">Review Status:</label>
+                <select name="status" class="form-control" style="width: 160px;" onchange="this.form.submit()">
+                    <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>All Statuses</option>
+                    <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>PENDING</option>
+                    <option value="CONFIRMED" {% if selected_status == 'CONFIRMED' %}selected{% endif %}>CONFIRMED</option>
+                    <option value="FALSE_ALARM" {% if selected_status == 'FALSE_ALARM' %}selected{% endif %}>FALSE ALARM</option>
+                    <option value="REVIEWED" {% if selected_status == 'REVIEWED' %}selected{% endif %}>REVIEWED</option>
+                </select>
+            </div>
+
+            {% if selected_risk != 'ALL' or selected_status != 'ALL' %}
+            <a href="/fraud-alerts" class="btn btn-secondary">Reset Filters</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Alert ID</th>
+                    <th>Customer & Account</th>
+                    <th>Transaction</th>
+                    <th>Risk Rule Reason</th>
+                    <th>Risk Level</th>
+                    <th>Review Status</th>
+                    <th>Alerted On</th>
+                    <th>Review Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in alerts %}
+                <tr>
+                    <td><strong>#{{ a.alert_id }}</strong></td>
+                    <td>
+                        <a href="/customers/{{ a.customer_id }}" style="font-weight: 600; color: var(--accent); text-decoration: none;">
+                            {{ a.customer_name }}
+                        </a>
+                        <div style="font-size: 11px; color: var(--text-muted);">Account #{{ a.account_id }} | {{ a.customer_phone }}</div>
+                    </td>
+                    <td>
+                        <div><strong>₹ {{ "{:,.2f}".format(a.txn_amount) }}</strong></div>
+                        <div style="font-size: 11.5px; color: var(--text-muted);">Txn #{{ a.txn_id }} ({{ a.txn_type }})</div>
+                    </td>
+                    <td style="max-width: 260px; font-size: 12.5px;">
+                        {{ a.reason }}
+                    </td>
+                    <td>
+                        <span class="badge {% if a.risk_level == 'HIGH' %}badge-danger{% elif a.risk_level == 'MEDIUM' %}badge-warning{% else %}badge-info{% endif %}">
+                            {{ a.risk_level }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if a.review_status == 'PENDING' %}
+                            <span class="badge badge-warning">PENDING</span>
+                        {% elif a.review_status == 'CONFIRMED' %}
+                            <span class="badge badge-danger">CONFIRMED</span>
+                        {% elif a.review_status == 'FALSE_ALARM' %}
+                            <span class="badge badge-success">FALSE ALARM</span>
+                        {% else %}
+                            <span class="badge badge-info">{{ a.review_status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 12px; color: var(--text-muted);">{{ a.alert_date }}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick="openReviewModal({{ a.alert_id }}, '{{ a.customer_name }}', {{ a.txn_amount }}, '{{ a.review_status }}')">
+                            Update
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">No fraud alerts found matching filter.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal for Reviewing Fraud Alert -->
+<div id="reviewAlertModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Review Fraud Alert</h3>
+            <button class="alert-close" onclick="closeModal('reviewAlertModal')">×</button>
+        </div>
+        <form id="reviewForm" method="post" action="">
+            <div class="modal-body">
+                <div style="background: #f8fafc; padding: 12px; border-radius: var(--radius); margin-bottom: 14px; font-size: 13px;">
+                    <div><strong>Customer:</strong> <span id="modal_cust_name"></span></div>
+                    <div><strong>Transaction Amount:</strong> ₹ <span id="modal_amount"></span></div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label>Set Review Decision *</label>
+                    <select name="review_status" id="modal_review_status" class="form-control" required>
+                        <option value="CONFIRMED">CONFIRMED (Verified Malicious / Actionable)</option>
+                        <option value="FALSE_ALARM">FALSE_ALARM (Customer verified legitimate transfer)</option>
+                        <option value="REVIEWED">REVIEWED (General compliance review complete)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Reviewer Notes / Auditor Comments</label>
+                    <textarea name="notes" class="form-control" rows="2" placeholder="Explain findings and reason for decision..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('reviewAlertModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Review Decision</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openReviewModal(alertId, customerName, amount, currentStatus) {
+    document.getElementById('reviewForm').action = '/fraud-alerts/' + alertId + '/review';
+    document.getElementById('modal_cust_name').innerText = customerName;
+    document.getElementById('modal_amount').innerText = Number(amount).toLocaleString('en-IN', {minimumFractionDigits: 2});
+    const statusSelect = document.getElementById('modal_review_status');
+    if (statusSelect) {
+        statusSelect.value = currentStatus === 'PENDING' ? 'CONFIRMED' : currentStatus;
+    }
+    openModal('reviewAlertModal');
+}
+</script>
+{% endblock %}

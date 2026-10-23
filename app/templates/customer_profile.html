@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Profile: {{ customer.name }} — SecureBank{% endblock %}
+{% block page_title %}Customer 360° Profile{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+    <a href="/customers" class="btn btn-secondary btn-sm">← Back to Customers</a>
+</div>
+
+<!-- Customer Bio Header Card -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">{{ customer.name }}</h3>
+            <span style="font-size: 13px; color: var(--text-muted);">Customer ID: #{{ customer.customer_id }} | Member since: {{ customer.created_at }}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="text-align: right;">
+                <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Fraud Risk Rating</div>
+                <span class="badge {% if customer_risk == 'HIGH' %}badge-danger{% elif customer_risk == 'MEDIUM' %}badge-warning{% else %}badge-success{% endif %}" style="font-size: 13px; padding: 4px 10px;">
+                    Risk Level: {{ customer_risk }}
+                </span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="openModal('editCustomerModal')">Edit Info</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div>
+                <span style="font-size: 12px; color: var(--text-muted);">Phone Number</span>
+                <div style="font-weight: 600;">{{ customer.phone }}</div>
+            </div>
+            <div>
+                <span style="font-size: 12px; color: var(--text-muted);">Email Address</span>
+                <div style="font-weight: 600;">{{ customer.email or "Not provided" }}</div>
+            </div>
+            <div>
+                <span style="font-size: 12px; color: var(--text-muted);">City / Region</span>
+                <div style="font-weight: 600;">{{ customer.city or "Not provided" }}</div>
+            </div>
+            <div>
+                <span style="font-size: 12px; color: var(--text-muted);">Date of Birth</span>
+                <div style="font-weight: 600;">{{ customer.dob or "Not recorded" }}</div>
+            </div>
+            <div style="grid-column: span 2;">
+                <span style="font-size: 12px; color: var(--text-muted);">Address</span>
+                <div>{{ customer.address or "No street address specified" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Accounts Section -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Bank Accounts</h3>
+        <a href="/accounts" class="btn btn-secondary btn-sm">+ Open Account</a>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Account ID</th>
+                    <th>Account Type</th>
+                    <th>Available Balance</th>
+                    <th>Status</th>
+                    <th>Opened On</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in accounts %}
+                <tr>
+                    <td><strong>#{{ a.account_id }}</strong></td>
+                    <td><span class="badge badge-info">{{ a.account_type }}</span></td>
+                    <td><strong>₹ {{ "{:,.2f}".format(a.balance) }}</strong></td>
+                    <td>
+                        <span class="badge {% if a.status == 'ACTIVE' %}badge-success{% elif a.status == 'BLOCKED' %}badge-danger{% else %}badge-secondary{% endif %}">
+                            {{ a.status }}
+                        </span>
+                    </td>
+                    <td>{{ a.created_at }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">No bank accounts associated with this customer.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Customer Loans & Beneficiaries in Two Columns -->
+<div class="grid-2col">
+    <!-- Loans Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Loan Applications</h3>
+            <a href="/loans" class="btn btn-secondary btn-sm">Apply Loan</a>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Loan ID</th>
+                        <th>Amount</th>
+                        <th>Rate</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in loans %}
+                    <tr>
+                        <td>#{{ l.loan_id }}</td>
+                        <td>₹ {{ "{:,.2f}".format(l.loan_amount) }}</td>
+                        <td>{{ l.interest_rate }}%</td>
+                        <td>
+                            <span class="badge {% if l.status == 'APPROVED' %}badge-success{% elif l.status == 'REJECTED' %}badge-danger{% elif l.status == 'CLOSED' %}badge-info{% else %}badge-warning{% endif %}">
+                                {{ l.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">No loan applications found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Beneficiaries Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Registered Beneficiaries</h3>
+            <a href="/beneficiaries" class="btn btn-secondary btn-sm">Manage</a>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Beneficiary Name</th>
+                        <th>Account No</th>
+                        <th>Bank</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in beneficiaries %}
+                    <tr>
+                        <td><strong>{{ b.ben_name }}</strong></td>
+                        <td><code>{{ b.ben_account_no }}</code></td>
+                        <td>{{ b.bank_name }}</td>
+                        <td><span class="badge badge-success">{{ b.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">No beneficiaries added yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div id="editCustomerModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Edit Customer Information</h3>
+            <button class="alert-close" onclick="closeModal('editCustomerModal')">×</button>
+        </div>
+        <form method="post" action="/customers/{{ customer.customer_id }}/edit">
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label>Full Name *</label>
+                    <input type="text" name="name" class="form-control" value="{{ customer.name }}" required>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Phone Number *</label>
+                        <input type="text" name="phone" class="form-control" value="{{ customer.phone }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" class="form-control" value="{{ customer.email or '' }}">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label>City</label>
+                    <input type="text" name="city" class="form-control" value="{{ customer.city or '' }}">
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea name="address" class="form-control" rows="2">{{ customer.address or '' }}</textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editCustomerModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

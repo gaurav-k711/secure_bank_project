@@ -1,0 +1,85 @@
+erDiagram
+    CUSTOMER ||--o{ ACCOUNT : "owns (1:N)"
+    CUSTOMER ||--o{ BENEFICIARY : "adds (1:N)"
+    CUSTOMER ||--o{ LOAN : "applies_for (1:N)"
+    ACCOUNT ||--o{ BANK_TRANSACTION : "records (1:N)"
+    BANK_TRANSACTION ||--o{ FRAUD_ALERT : "triggers (1:N)"
+    LOAN ||--o{ LOAN_PAYMENT : "repaid_by (1:N)"
+    ACCOUNT ||--o{ AUDIT_LOG : "audited_by (1:N)"
+
+    CUSTOMER {
+        NUMBER customer_id PK "Sequence generated identifier"
+        VARCHAR2 name "Full name (NOT NULL)"
+        VARCHAR2 phone UK "Unique contact (length >= 10)"
+        VARCHAR2 email UK "Unique email address"
+        VARCHAR2 address "Street address"
+        VARCHAR2 city "City / Metro area"
+        DATE date_of_birth "Birth date"
+        DATE created_at "Registration date"
+    }
+
+    ACCOUNT {
+        NUMBER account_id PK "Sequence generated identifier"
+        NUMBER customer_id FK "References CUSTOMER(customer_id)"
+        VARCHAR2 account_type "SAVINGS, CURRENT, SALARY"
+        NUMBER balance "CHECK balance >= 0 (DEFAULT 0)"
+        VARCHAR2 status "ACTIVE, BLOCKED, CLOSED"
+        DATE created_at "Opening timestamp"
+    }
+
+    BANK_TRANSACTION {
+        NUMBER txn_id PK "Sequence generated identifier"
+        NUMBER account_id FK "References ACCOUNT(account_id)"
+        VARCHAR2 txn_type "DEPOSIT, WITHDRAW, TRANSFER"
+        NUMBER amount "CHECK amount > 0"
+        DATE txn_date "Transaction timestamp"
+        VARCHAR2 status "SUCCESS, SUSPICIOUS, FAILED"
+        VARCHAR2 description "Channel / purpose description"
+    }
+
+    BENEFICIARY {
+        NUMBER beneficiary_id PK "Sequence generated identifier"
+        NUMBER customer_id FK "References CUSTOMER(customer_id)"
+        VARCHAR2 ben_name "Beneficiary payee name"
+        VARCHAR2 ben_account_no "Account number"
+        VARCHAR2 bank_name "Bank name (DEFAULT SecureBank)"
+        VARCHAR2 status "ACTIVE, INACTIVE"
+        DATE created_at "Registration timestamp"
+    }
+
+    LOAN {
+        NUMBER loan_id PK "Sequence generated identifier"
+        NUMBER customer_id FK "References CUSTOMER(customer_id)"
+        NUMBER loan_amount "CHECK loan_amount > 0"
+        NUMBER interest_rate "CHECK rate BETWEEN 1 AND 30"
+        NUMBER loan_term "Term in months (DEFAULT 12)"
+        VARCHAR2 status "PENDING, APPROVED, REJECTED, CLOSED"
+        DATE application_date "Application timestamp"
+    }
+
+    LOAN_PAYMENT {
+        NUMBER payment_id PK "Sequence generated identifier"
+        NUMBER loan_id FK "References LOAN(loan_id)"
+        NUMBER amount_paid "CHECK amount_paid > 0"
+        DATE payment_date "Payment timestamp"
+        VARCHAR2 payment_status "COMPLETED, FAILED"
+    }
+
+    FRAUD_ALERT {
+        NUMBER alert_id PK "Sequence generated identifier"
+        NUMBER txn_id FK "References BANK_TRANSACTION(txn_id)"
+        VARCHAR2 reason "Violation rule description"
+        VARCHAR2 risk_level "LOW, MEDIUM, HIGH"
+        VARCHAR2 review_status "PENDING, REVIEWED, FALSE_ALARM, CONFIRMED"
+        DATE alert_date "Detection timestamp"
+        DATE reviewed_at "Audit signoff timestamp"
+    }
+
+    AUDIT_LOG {
+        NUMBER log_id PK "Sequence generated identifier"
+        NUMBER account_id FK "References ACCOUNT(account_id)"
+        VARCHAR2 table_name "Target modified table"
+        VARCHAR2 action_type "INSERT, UPDATE, DELETE, REVIEW"
+        DATE action_time "Action timestamp"
+        VARCHAR2 details "Summary of change"
+    }

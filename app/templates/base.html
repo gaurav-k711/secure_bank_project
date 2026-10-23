@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SecureBank — Smart Banking Management System{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">🏛️</div>
+            <div class="brand-text">
+                <h2>SecureBank</h2>
+                <span>Smart DBMS Banking</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-title">Core Operations</div>
+            <a href="/" class="nav-item {% if request.url.path == '/' %}active{% endif %}">
+                <span>📊</span> Dashboard
+            </a>
+            <a href="/customers" class="nav-item {% if '/customers' in request.url.path %}active{% endif %}">
+                <span>👥</span> Customers
+            </a>
+            <a href="/accounts" class="nav-item {% if '/accounts' in request.url.path %}active{% endif %}">
+                <span>💳</span> Accounts
+            </a>
+            <a href="/transactions" class="nav-item {% if '/transactions' in request.url.path %}active{% endif %}">
+                <span>💸</span> Transactions
+            </a>
+            <a href="/beneficiaries" class="nav-item {% if '/beneficiaries' in request.url.path %}active{% endif %}">
+                <span>📑</span> Beneficiaries
+            </a>
+            <a href="/loans" class="nav-item {% if '/loans' in request.url.path %}active{% endif %}">
+                <span>💰</span> Loans & Repayment
+            </a>
+
+            <div class="nav-section-title">Risk & Intelligence</div>
+            <a href="/fraud-alerts" class="nav-item {% if '/fraud-alerts' in request.url.path %}active{% endif %}">
+                <span>🚨</span> Fraud Alerts
+            </a>
+            <a href="/reports" class="nav-item {% if '/reports' in request.url.path %}active{% endif %}">
+                <span>📈</span> SQL Reports
+            </a>
+            <a href="/audit-logs" class="nav-item {% if '/audit-logs' in request.url.path %}active{% endif %}">
+                <span>🛡️</span> Audit Logs
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div><strong>BCSE302L Project</strong></div>
+            <div style="font-size: 11px; margin-top: 4px;">Oracle Database 11g / 19c</div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+        <header class="top-navbar">
+            <div class="top-title">
+                <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+            </div>
+            <div class="top-actions">
+                <div class="db-pill connected">
+                    <span class="status-dot green"></span>
+                    <span>Oracle XE: Connected</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="content-body">
+            <!-- Flash Alert Messages -->
+            {% if success or request.query_params.get('success') %}
+            <div class="alert-banner success">
+                <span>✅ {{ success or request.query_params.get('success') }}</span>
+                <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+            {% endif %}
+
+            {% if error or request.query_params.get('error') %}
+            <div class="alert-banner error">
+                <span>❌ {{ error or request.query_params.get('error') }}</span>
+                <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+            {% endif %}
+
+            {% if alert_info or request.query_params.get('alert_info') %}
+            <div class="alert-banner warning">
+                <span>🚨 {{ alert_info or request.query_params.get('alert_info') }}</span>
+                <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

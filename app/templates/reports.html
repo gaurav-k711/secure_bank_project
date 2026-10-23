@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}SQL Analytics & Reports — SecureBank DBMS{% endblock %}
+{% block page_title %}Executive SQL Reports & Compliance Analytics{% endblock %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body" style="padding: 16px 24px;">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="/reports?report_type=summary" class="btn {% if report_type == 'summary' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                1. Deposits vs Withdrawals
+            </a>
+            <a href="/reports?report_type=accounts" class="btn {% if report_type == 'accounts' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                2. Account Breakdown
+            </a>
+            <a href="/reports?report_type=multi_accounts" class="btn {% if report_type == 'multi_accounts' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                3. Customer Portfolio
+            </a>
+            <a href="/reports?report_type=loans" class="btn {% if report_type == 'loans' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                4. Loans & Repayments
+            </a>
+            <a href="/reports?report_type=high_val" class="btn {% if report_type == 'high_val' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                5. Transactions > ₹1,00,000
+            </a>
+            <a href="/reports?report_type=suspicious" class="btn {% if report_type == 'suspicious' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                6. Suspicious Activity Log
+            </a>
+            <a href="/reports?report_type=monthly" class="btn {% if report_type == 'monthly' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+                7. Monthly Trends
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if report_type == 'summary' %}
+<!-- Report 1: Total Deposits vs Withdrawals vs Transfers -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Report 1: Transaction Volume & Aggregates by Type</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">SQL Concept: GROUP BY with SUM, AVG, MIN, MAX</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Transaction Type</th>
+                    <th>Count of Txns</th>
+                    <th>Total Monetary Volume</th>
+                    <th>Average Ticket Size</th>
+                    <th>Minimum Amount</th>
+                    <th>Maximum Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in totals_report %}
+                <tr>
+                    <td>
+                        <span class="badge {% if r.txn_type == 'DEPOSIT' %}badge-success{% elif r.txn_type == 'WITHDRAW' %}badge-warning{% else %}badge-info{% endif %}">
+                            {{ r.txn_type }}
+                        </span>
+                    </td>
+                    <td><strong>{{ r.total_count }}</strong></td>
+                    <td><strong>₹ {{ "{:,.2f}".format(r.total_amount) }}</strong></td>
+                    <td>₹ {{ "{:,.2f}".format(r.avg_amount) }}</td>
+                    <td>₹ {{ "{:,.2f}".format(r.min_amount) }}</td>
+                    <td>₹ {{ "{:,.2f}".format(r.max_amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% elif report_type == 'accounts' %}
+<!-- Report 2: Account-wise Transaction Breakdown -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Report 2: Account-Wise Transaction Activity</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">SQL Concept: Multi-table JOIN with Conditional Aggregation (CASE WHEN)</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Account No</th>
+                    <th>Customer Name</th>
+                    <th>Account Type</th>
+                    <th>Current Balance</th>
+                    <th>Total Transactions</th>
+                    <th>Cumulative Deposits</th>
+                    <th>Cumulative Withdrawals/Transfers</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in accounts_report %}
+                <tr>
+                    <td><strong>#{{ a.account_id }}</strong></td>
+                    <td>{{ a.customer_name }}</td>
+                    <td><span class="badge badge-info">{{ a.account_type }}</span></td>
+                    <td><strong>₹ {{ "{:,.2f}".format(a.balance) }}</strong></td>
+                    <td>{{ a.txn_count }}</td>
+                    <td style="color: var(--success); font-weight: 600;">₹ {{ "{:,.2f}".format(a.total_deposited) }}</td>
+                    <td style="color: var(--danger); font-weight: 600;">₹ {{ "{:,.2f}".format(a.total_withdrawn) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% elif report_type == 'multi_accounts' %}
+<!-- Report 3: Customer Portfolio & Multiple Accounts -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Report 3: Customer Multi-Account Portfolio</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">SQL Concept: GROUP BY with HAVING and Aggregate SUM</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Customer ID</th>
+                    <th>Name</th>
+                    <th>Contact Phone</th>
+                    <th>City</th>
+                    <th>Accounts Held</th>
+                    <th>Combined Portfolio Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in multi_accounts_report %}
+                <tr>
+                    <td>#{{ c.customer_id }}</td>
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td>{{ c.phone }}</td>
+                    <td>{{ c.city or "—" }}</td>
+                    <td><span class="badge badge-info">{{ c.account_count }} Accounts</span></td>
+                    <td><strong>₹ {{ "{:,.2f}".format(c.combined_balance) }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% elif report_type == 'loans' %}
+<!-- Report 4: Loan Applications and Repayments -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Report 4: Loan Portfolio & Outstanding Balances</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">SQL Concept: LEFT OUTER JOIN with NVL and Arithmetic Expressions</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Loan ID</th>
+                    <th>Borrower</th>
+                    <th>Sanctioned Amount</th>
+                    <th>Interest</th>
+                    <th>Total Repaid</th>
+                    <th>Outstanding Principal</th>
+                    <th>Payment Count</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in loans_report %}
+                <tr>
+                    <td>#{{ l.loan_id }}</td>
+                    <td><strong>{{ l.customer_name }}</strong></td>
+                    <td>₹ {{ "{:,.2f}".format(l.loan_amount) }}</td>
+                    <td>{{ l.interest_rate }}%</td>
+                    <td style="color: var(--success); font-weight: 600;">₹ {{ "{:,.2f}".format(l.amount_paid) }}</td>
+                    <td style="color: var(--danger); font-weight: 600;">₹ {{ "{:,.2f}".format(l.remaining_amount) }}</td>
+                    <td>{{ l.payment_count }} installments</td>
+                    <td>
+                        <span class="badge {% if l.status == 'APPROVED' %}badge-success{% elif l.status == 'REJECTED' %}badge-danger{% elif l.status == 'CLOSED' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ l.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% elif report_type == 'high_val' %}
+<!-- Report 5: High Value Transactions > Rs. 1,00,000 -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Report 5: High-Value Transactions (Exceeding ₹1,00,000)</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">SQL Concept: Predicate filtering on threshold amount with ORDER BY DESC</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Txn ID</th>
+                    <th>Customer Name</th>
+                    <th>Account No</th>
+                    <th>Type</th>
+                    <th>Amount (₹)</th>
+                    <th>Status</th>
+                    <th>Timestamp</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in high_val_report %}
+                <tr>
+                    <td>#{{ h.txn_id }}</td>
+                    <td><strong>{{ h.customer_name }}</strong></td>
+                    <td>Acc #{{ h.account_id }}</td>
+                    <td><span class="badge badge-info">{{ h.txn_type }}</span></td>
+                    <td><strong style="color: var(--danger);">₹ {{ "{:,.2f}".format(h.amount) }}</strong></td>
+                    <td>
+                        <span class="badge {% if h.status == 'SUSPICIOUS' %}badge-danger{% else %}badge-success{% endif %}">
+                            {{ h.status }}
+                        </span>
+                    </td>
+                    <td style="font-size: 12px; color: var(--text-muted);">{{ h.txn_date }}</td>
+                    <td>{{ h.description }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% elif report_type == 'suspicious' %}
+<!-- Report 6: Suspicious Transactions and Fraud Alerts -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Report 6: Suspicious Transactions by Date & Risk Level</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">SQL Concept: Multi-table JOIN linking FRAUD_ALERT, TRANSACTION, ACCOUNT, CUSTOMER</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Alert ID</th>
+                    <th>Customer Name</th>
+                    <th>Transaction Amount</th>
+                    <th>Flagged Reason</th>
+                    <th>Risk Rating</th>
+                    <th>Review Status</th>
+                    <th>Alert Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in suspicious_report %}
+                <tr>
+                    <td>#{{ s.alert_id }}</td>
+                    <td><strong>{{ s.customer_name }}</strong></td>
+                    <td><strong>₹ {{ "{:,.2f}".format(s.amount) }}</strong></td>
+                    <td style="max-width: 280px; font-size: 12.5px;">{{ s.reason }}</td>
+                    <td>
+                        <span class="badge {% if s.risk_level == 'HIGH' %}badge-danger{% elif s.risk_level == 'MEDIUM' %}badge-warning{% else %}badge-info{% endif %}">
+                            {{ s.risk_level }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {% if s.review_status == 'PENDING' %}badge-warning{% elif s.review_status == 'CONFIRMED' %}badge-danger{% elif s.review_status == 'FALSE_ALARM' %}badge-success{% else %}badge-secondary{% endif %}">
+                            {{ s.review_status }}
+                        </span>
+                    </td>
+                    <td style="font-size: 12px; color: var(--text-muted);">{{ s.alert_date }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% elif report_type == 'monthly' %}
+<!-- Report 7: Monthly Transaction Summary -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Report 7: Monthly Transaction Volumes & Suspicious Ratio</h3>
+            <span style="font-size: 12px; color: var(--text-muted);">SQL Concept: Date grouping using TO_CHAR(txn_date, 'YYYY-MM') with conditional sum</span>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Total Transactions</th>
+                    <th>Total Volume (₹)</th>
+                    <th>Average Ticket Size (₹)</th>
+                    <th>Suspicious Flags</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in monthly_report %}
+                <tr>
+                    <td><strong>{{ m.month_str }}</strong></td>
+                    <td>{{ m.total_txns }}</td>
+                    <td><strong>₹ {{ "{:,.2f}".format(m.total_volume) }}</strong></td>
+                    <td>₹ {{ "{:,.2f}".format(m.avg_ticket_size) }}</td>
+                    <td>
+                        <span class="badge {% if m.suspicious_count > 0 %}badge-danger{% else %}badge-success{% endif %}">
+                            {{ m.suspicious_count }} flagged
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

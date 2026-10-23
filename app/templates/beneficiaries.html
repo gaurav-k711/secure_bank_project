@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Beneficiaries — SecureBank DBMS{% endblock %}
+{% block page_title %}Beneficiary Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Registered Transfer Beneficiaries</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Whitelist of approved destination accounts for outbound customer transfers</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('addBenModal')">
+            <span>➕</span> Add Beneficiary
+        </button>
+    </div>
+
+    <!-- Filter by Customer -->
+    <div class="card-body" style="padding-bottom: 0;">
+        <form method="get" action="/beneficiaries" style="display: flex; gap: 12px; margin-bottom: 20px;">
+            <select name="customer_id" class="form-control" style="max-width: 320px;" onchange="this.form.submit()">
+                <option value="">-- All Customers --</option>
+                {% for c in customers %}
+                <option value="{{ c.customer_id }}" {% if selected_customer == c.customer_id %}selected{% endif %}>
+                    {{ c.name }} (ID #{{ c.customer_id }})
+                </option>
+                {% endfor %}
+            </select>
+            {% if selected_customer %}
+            <a href="/beneficiaries" class="btn btn-secondary">Clear Filter</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Customer (Owner)</th>
+                    <th>Beneficiary Name</th>
+                    <th>Destination Account</th>
+                    <th>Destination Bank</th>
+                    <th>Status</th>
+                    <th>Added On</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in beneficiaries %}
+                <tr>
+                    <td>#{{ b.beneficiary_id }}</td>
+                    <td>
+                        <a href="/customers/{{ b.customer_id }}" style="color: var(--accent); font-weight: 600; text-decoration: none;">
+                            {{ b.customer_name }}
+                        </a>
+                    </td>
+                    <td><strong>{{ b.ben_name }}</strong></td>
+                    <td><code>{{ b.ben_account_no }}</code></td>
+                    <td>{{ b.bank_name }}</td>
+                    <td>
+                        <span class="badge {% if b.status == 'ACTIVE' %}badge-success{% else %}badge-secondary{% endif %}">
+                            {{ b.status }}
+                        </span>
+                    </td>
+                    <td style="font-size: 12px; color: var(--text-muted);">{{ b.created_at }}</td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <form method="post" action="/beneficiaries/{{ b.beneficiary_id }}/toggle" style="display: inline;">
+                                <input type="hidden" name="current_status" value="{{ b.status }}">
+                                <button type="submit" class="btn btn-secondary btn-sm">
+                                    {% if b.status == 'ACTIVE' %}Deactivate{% else %}Activate{% endif %}
+                                </button>
+                            </form>
+                            <form method="post" action="/beneficiaries/{{ b.beneficiary_id }}/delete" onsubmit="return confirm('Remove beneficiary {{ b.ben_name }}?');" style="display: inline;">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">No registered beneficiaries found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Beneficiary Modal -->
+<div id="addBenModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Register New Beneficiary</h3>
+            <button class="alert-close" onclick="closeModal('addBenModal')">×</button>
+        </div>
+        <form method="post" action="/beneficiaries/add">
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label>Select Customer *</label>
+                    <select name="customer_id" class="form-control" required>
+                        <option value="">-- Choose Account Holder --</option>
+                        {% for c in customers %}
+                        <option value="{{ c.customer_id }}">{{ c.name }} (ID #{{ c.customer_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label>Beneficiary Payee Name *</label>
+                    <input type="text" name="ben_name" class="form-control" placeholder="e.g. Anand Mahindra" required>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Beneficiary Account No *</label>
+                        <input type="text" name="ben_account_no" class="form-control" placeholder="e.g. 5001009988" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Bank Name *</label>
+                        <input type="text" name="bank_name" class="form-control" value="SecureBank" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addBenModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Beneficiary</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

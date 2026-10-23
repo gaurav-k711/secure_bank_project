@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions — SecureBank DBMS{% endblock %}
+{% block page_title %}Transaction Operations & Ledger{% endblock %}
+
+{% block content %}
+<!-- Three Quick Operation Forms in Tabs / Grid -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h3 class="card-title">Execute Real-World Monetary Transactions</h3>
+        <div style="font-size: 12px; color: var(--text-muted);">
+            Database Procedures: <code>transfer_money</code>, <code>withdraw_money</code>, <code>deposit_money</code>
+        </div>
+    </div>
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 24px;">
+            
+            <!-- 1. Money Transfer Form (ACID Stored Procedure) -->
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <span style="font-size: 18px;">🔄</span>
+                    <strong style="color: var(--primary);">Inter-Account Transfer</strong>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+                    Atomic transfer between accounts with balance locking and real-time fraud rule check.
+                </p>
+                <form method="post" action="/transactions/transfer">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>From Account (Sender) *</label>
+                        <select name="from_account" class="form-control" required>
+                            <option value="">-- Choose Sender --</option>
+                            {% for a in active_accounts %}
+                            <option value="{{ a.account_id }}">Acc #{{ a.account_id }} — {{ a.name }} (Bal: ₹{{ "{:,.0f}".format(a.balance) }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>To Account (Recipient) *</label>
+                        <select name="to_account" class="form-control" required>
+                            <option value="">-- Choose Receiver --</option>
+                            {% for a in active_accounts %}
+                            <option value="{{ a.account_id }}">Acc #{{ a.account_id }} — {{ a.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Amount (₹) *</label>
+                        <input type="number" step="0.01" min="1" name="amount" class="form-control" placeholder="e.g. 5000 or 150000" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label>Remarks</label>
+                        <input type="text" name="description" class="form-control" placeholder="e.g. Rent, Vendor payment">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Execute Stored Procedure
+                    </button>
+                </form>
+            </div>
+
+            <!-- 2. Deposit Form -->
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <span style="font-size: 18px;">📥</span>
+                    <strong style="color: var(--primary);">Deposit Funds</strong>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+                    Credits balance, inserts transaction, and creates audit log entry via database trigger.
+                </p>
+                <form method="post" action="/transactions/deposit">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Target Account *</label>
+                        <select name="account_id" class="form-control" required>
+                            <option value="">-- Choose Account --</option>
+                            {% for a in active_accounts %}
+                            <option value="{{ a.account_id }}">Acc #{{ a.account_id }} — {{ a.name }} (Bal: ₹{{ "{:,.0f}".format(a.balance) }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Deposit Amount (₹) *</label>
+                        <input type="number" step="0.01" min="1" name="amount" class="form-control" placeholder="e.g. 10000" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 52px;">
+                        <label>Deposit Method</label>
+                        <input type="text" name="description" class="form-control" placeholder="e.g. Cash Deposit, Cheque #4421">
+                    </div>
+                    <button type="submit" class="btn btn-success" style="width: 100%;">
+                        Process Deposit
+                    </button>
+                </form>
+            </div>
+
+            <!-- 3. Withdrawal Form (Fraud Rules R1 & R2) -->
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                    <span style="font-size: 18px;">📤</span>
+                    <strong style="color: var(--primary);">Withdraw Cash</strong>
+                </div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+                    Validates available balance. If amount > ₹1,00,000 or > 80% balance, marks SUSPICIOUS.
+                </p>
+                <form method="post" action="/transactions/withdraw">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Source Account *</label>
+                        <select name="account_id" class="form-control" required>
+                            <option value="">-- Choose Account --</option>
+                            {% for a in active_accounts %}
+                            <option value="{{ a.account_id }}">Acc #{{ a.account_id }} — {{ a.name }} (Bal: ₹{{ "{:,.0f}".format(a.balance) }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Withdrawal Amount (₹) *</label>
+                        <input type="number" step="0.01" min="1" name="amount" class="form-control" placeholder="e.g. 5000 or 120000" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 52px;">
+                        <label>Channel / Purpose</label>
+                        <input type="text" name="description" class="form-control" placeholder="e.g. ATM, Counter withdrawal">
+                    </div>
+                    <button type="submit" class="btn btn-secondary" style="width: 100%; border-color: var(--accent); color: var(--accent);">
+                        Process Withdrawal
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Transaction History Table with Filters -->
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Historical Transaction Ledger</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Complete ledger of monetary entries queried from table <code>BANK_TRANSACTION</code></p>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card-body" style="padding-bottom: 0;">
+        <form method="get" action="/transactions" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 13px; font-weight: 600;">Type:</label>
+                <select name="txn_type" class="form-control" style="width: 130px;" onchange="this.form.submit()">
+                    <option value="ALL" {% if selected_type == 'ALL' %}selected{% endif %}>All Types</option>
+                    <option value="DEPOSIT" {% if selected_type == 'DEPOSIT' %}selected{% endif %}>DEPOSIT</option>
+                    <option value="WITHDRAW" {% if selected_type == 'WITHDRAW' %}selected{% endif %}>WITHDRAW</option>
+                    <option value="TRANSFER" {% if selected_type == 'TRANSFER' %}selected{% endif %}>TRANSFER</option>
+                </select>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 13px; font-weight: 600;">Status:</label>
+                <select name="status" class="form-control" style="width: 140px;" onchange="this.form.submit()">
+                    <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>All Statuses</option>
+                    <option value="SUCCESS" {% if selected_status == 'SUCCESS' %}selected{% endif %}>SUCCESS</option>
+                    <option value="SUSPICIOUS" {% if selected_status == 'SUSPICIOUS' %}selected{% endif %}>SUSPICIOUS (Alerts)</option>
+                    <option value="FAILED" {% if selected_status == 'FAILED' %}selected{% endif %}>FAILED</option>
+                </select>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 13px; font-weight: 600;">Min Amount (₹):</label>
+                <input type="number" name="min_amount" class="form-control" placeholder="e.g. 50000" value="{{ min_amount }}" style="width: 140px;">
+                <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+            </div>
+
+            {% if selected_type != 'ALL' or selected_status != 'ALL' or min_amount %}
+            <a href="/transactions" class="btn btn-secondary">Reset</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Txn ID</th>
+                    <th>Account & Customer</th>
+                    <th>Type</th>
+                    <th>Amount (₹)</th>
+                    <th>Status</th>
+                    <th>Description / Channel</th>
+                    <th>Timestamp</th>
+                    <th>Fraud Alert?</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr {% if t.status == 'SUSPICIOUS' %}style="background-color: #fff1f2;"{% endif %}>
+                    <td><strong>#{{ t.txn_id }}</strong></td>
+                    <td>
+                        <div><strong>{{ t.customer_name }}</strong></div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Account #{{ t.account_id }}</div>
+                    </td>
+                    <td>
+                        <span class="badge {% if t.txn_type == 'DEPOSIT' %}badge-success{% elif t.txn_type == 'WITHDRAW' %}badge-warning{% else %}badge-info{% endif %}">
+                            {{ t.txn_type }}
+                        </span>
+                    </td>
+                    <td><strong style="font-size: 14px;">₹ {{ "{:,.2f}".format(t.amount) }}</strong></td>
+                    <td>
+                        {% if t.status == 'SUCCESS' %}
+                            <span class="badge badge-success">SUCCESS</span>
+                        {% elif t.status == 'SUSPICIOUS' %}
+                            <span class="badge badge-danger">SUSPICIOUS</span>
+                        {% else %}
+                            <span class="badge badge-secondary">{{ t.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 12.5px;">{{ t.description or "—" }}</td>
+                    <td style="font-size: 12px; color: var(--text-muted);">{{ t.txn_date }}</td>
+                    <td>
+                        {% if t.has_alert > 0 %}
+                            <a href="/fraud-alerts" class="badge badge-danger" style="text-decoration: none;">🚨 Alert Raised</a>
+                        {% else %}
+                            <span style="color: var(--text-muted); font-size: 12px;">Normal</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">No transactions recorded matching the selected filter.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

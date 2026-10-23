@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Customers — SecureBank DBMS{% endblock %}
+{% block page_title %}Customer Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Registered Customers Directory</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Manage customer records, personal details, and verify associated portfolios</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="openModal('addCustomerModal')">
+                <span>➕</span> Add Customer
+            </button>
+        </div>
+    </div>
+
+    <div class="card-body" style="padding-bottom: 0;">
+        <!-- Search and Filter Form -->
+        <form method="get" action="/customers" style="display: flex; gap: 12px; margin-bottom: 20px;">
+            <input type="text" name="search" class="form-control" placeholder="Search by name, phone, or city..." value="{{ search }}" style="max-width: 380px;">
+            <button type="submit" class="btn btn-secondary">Search</button>
+            {% if search %}
+            <a href="/customers" class="btn btn-secondary">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Customer Name</th>
+                    <th>Contact Info</th>
+                    <th>City / Location</th>
+                    <th>Accounts</th>
+                    <th>Combined Balance</th>
+                    <th>Registered</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in customers %}
+                <tr>
+                    <td><strong>#{{ c.customer_id }}</strong></td>
+                    <td>
+                        <a href="/customers/{{ c.customer_id }}" style="font-weight: 600; color: var(--accent); text-decoration: none;">
+                            {{ c.name }}
+                        </a>
+                    </td>
+                    <td>
+                        <div>📞 {{ c.phone }}</div>
+                        {% if c.email %}
+                        <div style="font-size: 12px; color: var(--text-muted);">✉️ {{ c.email }}</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ c.city or "—" }}</td>
+                    <td>
+                        <span class="badge badge-info">{{ c.account_count }} Accounts</span>
+                    </td>
+                    <td><strong>₹ {{ "{:,.2f}".format(c.total_balance) }}</strong></td>
+                    <td style="font-size: 12px; color: var(--text-muted);">{{ c.created_at }}</td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <a href="/customers/{{ c.customer_id }}" class="btn btn-secondary btn-sm">Profile</a>
+                            <form method="post" action="/customers/{{ c.customer_id }}/delete" onsubmit="return confirm('Are you sure you want to delete customer #{{ c.customer_id }}?');" style="display: inline;">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">No customers found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div id="addCustomerModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Add New Bank Customer</h3>
+            <button class="alert-close" onclick="closeModal('addCustomerModal')">×</button>
+        </div>
+        <form method="post" action="/customers/add">
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label>Full Name *</label>
+                    <input type="text" name="name" class="form-control" required placeholder="e.g. Ramesh Chandra">
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Phone Number * (min 10 digits)</label>
+                        <input type="text" name="phone" class="form-control" required placeholder="e.g. 9876543210">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" class="form-control" placeholder="e.g. ramesh@mail.com">
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" name="city" class="form-control" placeholder="e.g. Bangalore">
+                    </div>
+                    <div class="form-group">
+                        <label>Date of Birth</label>
+                        <input type="date" name="dob" class="form-control">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea name="address" class="form-control" rows="2" placeholder="Residential address"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addCustomerModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Customer</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
