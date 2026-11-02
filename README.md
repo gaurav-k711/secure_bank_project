@@ -8,7 +8,7 @@
 > [!WARNING]
 > ### Academic Topic Allocation Discrepancy Notice
 > **Important Note for Evaluation / Faculty Verification**:  
-> In the official course topic allocation sheet for the laboratory component, student registration number **`24BDE0023`** was originally listed against the domain **`Hospital Management`**. However, per student instructions and current coursework objectives, this project has been fully developed as **`SecureBank — Smart Banking Management System with Database-Based Fraud Detection`**.  
+> In the official course topic allocation sheet for the laboratory component,was originally listed against the domain **`Hospital Management`**. However, per student instructions and current coursework objectives, this project has been fully developed as **`SecureBank — Smart Banking Management System with Database-Based Fraud Detection`**.  
 > Please verify and reconcile this topic selection with your faculty instructor.
 
 ---
@@ -169,5 +169,6 @@ python -m pytest securebank/tests/test_banking.py -v
 3. **Scenario 3 — Fraud Rule Trigger**: Transfer ₹1,50,000 from Account #5 to Account #2 $\to$ Notice system flags transaction as `SUSPICIOUS` and raises an unreviewed alert in **Fraud Alerts**.
 4. **Scenario 4 — Batch Cursor Freeze**: Click **Run Batch Audit Cursor** on the Fraud Alerts page $\to$ Observe PL/SQL explicit cursor evaluating pending alerts and automatically freezing Account #3 due to 3+ fraud flags.
 5. **Scenario 5 — Loan Processing & Repayment**: Apply for loan $\to$ Verify risk check $\to$ Make repayments until balance reaches zero $\to$ Confirm status shifts to `CLOSED`.
-#   s e c u r e _ b a n k _ p r o j e c t  
+#   s e c u r e _ b a n k _ p r o j e c t 
+ 
  
