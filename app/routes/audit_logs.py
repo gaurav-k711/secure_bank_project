@@ -41,7 +41,7 @@ async def list_audit_logs(
     tables = execute_query("SELECT DISTINCT table_name FROM audit_log ORDER BY table_name ASC")
     actions = execute_query("SELECT DISTINCT action_type FROM audit_log ORDER BY action_type ASC")
 
-    return templates.TemplateResponse("audit_logs.html", {
+    return templates.TemplateResponse(request=request, name="audit_logs.html", context={
         "request": request,
         "logs": logs,
         "tables": [t["table_name"] for t in tables],

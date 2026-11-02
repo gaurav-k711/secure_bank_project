@@ -34,7 +34,7 @@ async def list_loans(request: Request, status: str = None, success: str = None, 
     # Approved loans for repayment modal
     approved_loans = execute_query("SELECT loan_id, customer_name, loan_amount, remaining_balance FROM v_loan_summary WHERE status = 'APPROVED' ORDER BY loan_id ASC")
 
-    return templates.TemplateResponse("loans.html", {
+    return templates.TemplateResponse(request=request, name="loans.html", context={
         "request": request,
         "loans": loans,
         "customers": customers,

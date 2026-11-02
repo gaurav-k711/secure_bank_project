@@ -53,7 +53,7 @@ async def list_fraud_alerts(
     """
     stats = execute_query(stats_sql, fetch_one=True) or {}
 
-    return templates.TemplateResponse("fraud_alerts.html", {
+    return templates.TemplateResponse(request=request, name="fraud_alerts.html", context={
         "request": request,
         "alerts": alerts,
         "stats": stats,

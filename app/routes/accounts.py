@@ -44,7 +44,7 @@ async def list_accounts(
     cust_sql = "SELECT customer_id, name, phone FROM customer ORDER BY name ASC"
     customers = execute_query(cust_sql)
 
-    return templates.TemplateResponse("accounts.html", {
+    return templates.TemplateResponse(request=request, name="accounts.html", context={
         "request": request,
         "accounts": accounts,
         "customers": customers,

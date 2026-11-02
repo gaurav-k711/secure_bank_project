@@ -126,7 +126,7 @@ async def view_reports(request: Request, report_type: str = "summary"):
     """
     monthly_report = execute_query(sql_monthly)
 
-    return templates.TemplateResponse("reports.html", {
+    return templates.TemplateResponse(request=request, name="reports.html", context={
         "request": request,
         "report_type": report_type,
         "totals_report": totals_report,

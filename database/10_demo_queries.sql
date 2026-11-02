@@ -62,7 +62,7 @@ ORDER BY a.account_id ASC;
 
 -- ----------------------------------------------------------------------------
 -- Q5: Three-Table Join with Filtering
--- Description: Retrieve all transactions flagged as SUSPICIOUS with account & customer details.
+-- Description: Retrieve all transactions flagged as SUSPICIOUS with account and customer details.
 -- Concept: Multi-table JOIN (BANK_TRANSACTION -> ACCOUNT -> CUSTOMER) with WHERE filter.
 -- ----------------------------------------------------------------------------
 SELECT t.txn_id,

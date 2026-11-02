@@ -61,7 +61,7 @@ async def list_transactions(
     """
     active_accounts = execute_query(active_acc_sql)
 
-    return templates.TemplateResponse("transactions.html", {
+    return templates.TemplateResponse(request=request, name="transactions.html", context={
         "request": request,
         "transactions": transactions,
         "active_accounts": active_accounts,

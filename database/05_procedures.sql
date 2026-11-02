@@ -7,7 +7,7 @@
 -- ----------------------------------------------------------------------------
 -- Procedure 1: transfer_money
 -- Performs an atomic, ACID-compliant funds transfer between two accounts.
--- Evaluates fraud detection rules (R1 & R2) and raises fraud alerts when flagged.
+-- Evaluates fraud detection rules (R1 and R2) and raises fraud alerts when flagged.
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE transfer_money (
     p_from        IN NUMBER,
@@ -122,7 +122,7 @@ END transfer_money;
 
 -- ----------------------------------------------------------------------------
 -- Procedure 2: deposit_money
--- Safely deposits funds into an active account and records transaction & audit log.
+-- Safely deposits funds into an active account and records transaction and audit log.
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE deposit_money (
     p_account_id  IN NUMBER,

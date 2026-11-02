@@ -38,7 +38,7 @@ async def list_customers(request: Request, search: str = None, success: str = No
         """
         customers = execute_query(sql)
 
-    return templates.TemplateResponse("customers.html", {
+    return templates.TemplateResponse(request=request, name="customers.html", context={
         "request": request,
         "customers": customers,
         "search": search or "",
@@ -130,7 +130,7 @@ async def view_customer_profile(request: Request, customer_id: int):
     risk_res = execute_query(risk_sql, {"id": customer_id}, fetch_one=True)
     customer_risk = risk_res["risk_level"] if risk_res else "LOW"
 
-    return templates.TemplateResponse("customer_profile.html", {
+    return templates.TemplateResponse(request=request, name="customer_profile.html", context={
         "request": request,
         "customer": customer,
         "accounts": accounts,

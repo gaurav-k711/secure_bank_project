@@ -31,7 +31,7 @@ async def list_beneficiaries(request: Request, customer_id: int = None, success:
     cust_sql = "SELECT customer_id, name FROM customer ORDER BY name ASC"
     customers = execute_query(cust_sql)
 
-    return templates.TemplateResponse("beneficiaries.html", {
+    return templates.TemplateResponse(request=request, name="beneficiaries.html", context={
         "request": request,
         "beneficiaries": beneficiaries,
         "customers": customers,

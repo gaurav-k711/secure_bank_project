@@ -114,7 +114,7 @@ async def dashboard(request: Request):
         except Exception as e:
             db_status = str(e)
 
-    return templates.TemplateResponse("dashboard.html", {
+    return templates.TemplateResponse(request=request, name="dashboard.html", context={
         "request": request,
         "db_ok": db_ok,
         "db_status": db_status,
